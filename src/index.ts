@@ -196,6 +196,7 @@ const mouse = { x: 0, y: 0 };
 
 		context?.save();
 
+		// translateでページめくりを描画
 		context?.translate(
 			CANVAS_PADDING + BOOK_WIDTH / 2,
 			PAGE_Y + CANVAS_PADDING,
