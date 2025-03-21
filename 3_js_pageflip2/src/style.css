@@ -1,0 +1,135 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #333;
+}
+
+*,
+* :before,
+*:after {
+  box-sizing: border-box;
+}
+
+.book {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.4s 0.2s;
+  perspective: 250vw;
+}
+
+.pages-container {
+  width: 100%;
+  min-height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  border-radius: 4px;
+}
+
+.pages {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  min-height: 100%;
+}
+
+.left-pages {
+  left: 0;
+}
+
+.right-pages {
+  right: 0;
+}
+
+.left-pages .page {
+  transform: rotateY(90deg) scaleX(0.5);
+  transform-origin: right;
+  background: linear-gradient(-90deg, #e7e7e7, #fff 30%);
+  border-radius: 0 4px 4px 0;
+  transition: transform 0.8s;
+  transition-timing-function: ease-out;
+}
+
+.left-pages .page:is(.--flipped) {
+  transition-timing-function: ease-in;
+}
+
+.left-pages .page:first-child {
+  pointer-events: none;
+}
+
+.right-pages .page {
+  left: 0;
+  transform: rotateY(-90deg) scaleX(0.5);
+  transform-origin: left;
+  transition: transform 0.8s;
+  transition-timing-function: ease-in;
+  background: linear-gradient(90deg, #ebebeb, #fff 11%);
+  border-radius: 4px 0 0 4px;
+}
+
+.right-pages .page:is(.--flipped) {
+  transition-timing-function: ease-out;
+}
+
+.right-pages .page:last-child {
+  pointer-events: none;
+}
+
+.page {
+  width: 100%;
+  min-height: 100%;
+  position: absolute;
+  background-color: #fff;
+}
+
+.page::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  opacity: 0.1;
+  transition: opacity 1.2s ease-in-out;
+  pointer-events: none
+}
+
+.page:is(.--active):before {
+  opacity: 0;
+}
+
+.page:is(.--active) {
+  transform: rotate3d(0, 0, 0, 90deg) scaleX(1);
+}
+
+.bundle-paper {
+  position: fixed;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+  width: 16px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  z-index: 1000;
+}
+
+.bundle-paper::before {
+  content: "";
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, #ebebeb, #fff 50%); 
+}
+
+.bundle-paper::after {
+  content: "";
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, #ebebeb, #fff 50%);  
+}
