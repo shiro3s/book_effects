@@ -110,14 +110,49 @@ pageContentIds.forEach((ids, index) => {
 	createSheet(ids.front, ids.back, index);
 });
 
-sheets.forEach((sheet, index) => {
-    if (sheet.backObject) {
-        // 各シートの裏面を初期状態で非表示にする
-        sheet.backObject.element.style.visibility = 'hidden';
-        // console.log(`Initially hiding back of sheet ${index}`); // デバッグ用
-    }
-});
+// sheets.forEach((sheet, index) => {
+//     if (sheet.backObject) {
+//         // 各シートの裏面を初期状態で非表示にする
+//         sheet.backObject.element.style.visibility = 'hidden';
+//         // console.log(`Initially hiding back of sheet ${index}`); // デバッグ用
+//     }
+// });
 
+/**
+ * 現在の本の状態に基づいて、表示すべきページ（面）のみを表示する関数
+ */
+function updatePageVisibility() {
+	// console.log(`Updating visibility based on currentSheetIndex: ${currentSheetIndex}`); // デバッグ用
+
+	sheets.forEach((sheet, i) => {
+		// このシートが左ページか右ページかを判定
+		const isRightPageSheet = i === currentSheetIndex;
+		const isLeftPageSheet = i === currentSheetIndex - 1;
+
+		// シートが開いているか閉じているかを判定 (誤差を許容)
+		const isOpen = Math.abs(sheet.rotation.y + Math.PI) < 0.01;
+		const isClosed = Math.abs(sheet.rotation.y) < 0.01;
+
+		// デフォルトで両面を非表示にする
+		if (sheet.frontObject)
+			sheet.frontObject.element.style.visibility = "hidden";
+		if (sheet.backObject) sheet.backObject.element.style.visibility = "hidden";
+
+		// 表示すべき面だけを表示する
+		// 左ページ（前のシートの裏面）
+		if (isLeftPageSheet && isOpen && sheet.backObject) {
+			// console.log(`Showing back of sheet ${i} (Left Page)`); // デバッグ用
+			sheet.backObject.element.style.visibility = "visible";
+		}
+		// 右ページ（現在のシートの表面）
+		if (isRightPageSheet && isClosed && sheet.frontObject) {
+			// console.log(`Showing front of sheet ${i} (Right Page)`); // デバッグ用
+			sheet.frontObject.element.style.visibility = "visible";
+		}
+	});
+}
+
+updatePageVisibility();
 
 // Position the book slightly for better view?
 // book.position.x = -PAGE_WIDTH / 2; // Example: Center the spine
@@ -133,22 +168,24 @@ function turnSheet(targetSheetIndex, direction) {
 	isAnimating = true;
 
 	const sheetToTurn = sheets[targetSheetIndex];
-    console.log(targetSheetIndex)
+	if (!sheetToTurn) {
+		isAnimating = false;
+		return;
+	}
+
 	const targetRotation = direction === "next" ? -Math.PI : 0;
 	const duration = 0.8;
 
-    console.log(sheetToTurn.backObject)
-
-     // --- Generalized Visibility Control ---
-    // 対象シートに裏面が存在するか確認
-    if (sheetToTurn.backObject) {
-        if (direction === 'next') {
-            // 'next' (開く) アニメーション開始前に裏面を表示
-            // console.log(`Showing back of sheet ${targetSheetIndex} for 'next' turn`); // デバッグ用
-            sheetToTurn.backObject.element.style.visibility = 'visible';
-        }
-        // 'prev' (閉じる) 場合は onComplete で非表示にする
-    }
+	// --- Generalized Visibility Control ---
+	// 対象シートに裏面が存在するか確認
+	if (sheetToTurn.backObject) {
+		if (direction === "next") {
+			// 'next' (開く) アニメーション開始前に裏面を表示
+			// console.log(`Showing back of sheet ${targetSheetIndex} for 'next' turn`); // デバッグ用
+			sheetToTurn.backObject.element.style.visibility = "visible";
+		}
+		// 'prev' (閉じる) 場合は onComplete で非表示にする
+	}
 
 	// No renderOrder needed for CSS3D objects typically
 
@@ -159,15 +196,20 @@ function turnSheet(targetSheetIndex, direction) {
 		onComplete: () => {
 			isAnimating = false;
 
-            // --- Generalized Visibility Control (onComplete) ---
-            // 対象シートに裏面が存在するか確認
-            if (sheetToTurn.backObject) {
-                if (direction === 'prev') {
-                    // 'prev' (閉じる) アニメーション完了時に裏面を非表示
-                    // console.log(`Hiding back of sheet ${targetSheetIndex} after 'prev' turn complete`); // デバッグ用
-                    sheetToTurn.backObject.element.style.visibility = 'hidden';
-                }
-            }
+			// Update currentSheetIndex based on the completed action
+			if (direction === "next") {
+				// currentSheetIndex は右ページを示すIndexなので、
+				// めくったシートのIndex + 1 になる
+				currentSheetIndex = targetSheetIndex + 1;
+			} else {
+				// direction === 'prev'
+				// 閉じたシートのIndexが targetSheetIndex なので、
+				// currentSheetIndex は targetSheetIndex に戻る
+				currentSheetIndex = targetSheetIndex;
+			}
+
+			// --- Update Visibility Based on New State ---
+			updatePageVisibility()
 
 			updateButtons();
 		},
@@ -182,14 +224,14 @@ const nextBtn = document.getElementById("next-btn");
 nextBtn.addEventListener("click", () => {
 	if (!isAnimating && currentSheetIndex < totalSheets) {
 		turnSheet(currentSheetIndex, "next");
-		currentSheetIndex++;
+		// currentSheetIndex++;
 	}
 });
 
 prevBtn.addEventListener("click", () => {
 	if (!isAnimating && currentSheetIndex > 0) {
-		currentSheetIndex--;
-		turnSheet(currentSheetIndex, "prev");
+		// currentSheetIndex--;
+		turnSheet(currentSheetIndex - 1, "prev");
 	}
 });
 
