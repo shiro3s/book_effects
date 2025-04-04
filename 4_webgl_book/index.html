@@ -28,7 +28,7 @@
       /* Container itself doesn't block */
     }
 
-    #css-container > div > div {
+    #css-container>div>div {
       /* Target the CSS3DObject wrapper */
       pointer-events: auto;
       /* Children should be interactive */
@@ -70,6 +70,12 @@
       font-family: sans-serif;
       border: 1px solid #eee;
       /* Optional border */
+
+      /* レンダリング安定化のためのヒント */
+      /* transform: translateZ(0); */
+      /* 要素を別レイヤーに配置するよう促す */
+      /* backface-visibility: hidden; */
+      /* 裏面は非表示に */
     }
 
     .page-html-content h1 {

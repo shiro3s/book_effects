@@ -3,7 +3,9 @@ const webglContainer = document.getElementById("webgl-container");
 const cssContainer = document.getElementById("css-container"); // Get CSS container
 
 const scene = new THREE.Scene();
+
 const FOV = 75;
+
 const camera = new THREE.PerspectiveCamera(
 	FOV,
 	window.innerWidth / window.innerHeight,
@@ -32,7 +34,7 @@ scene.add(ambientLight);
 // IMPORTANT: Match dimensions with CSS .page-html-content
 const PAGE_WIDTH = 400; // in "pixels" (or world units matching pixels)
 const PAGE_HEIGHT = 600;
-const SHEET_THICKNESS = 1; // Adjust thickness in pixel units
+const SHEET_THICKNESS = 5; // Adjust thickness in pixel units
 
 const book = new THREE.Group();
 scene.add(book);
@@ -62,8 +64,6 @@ function createSheet(frontHtmlId, backHtmlId, index) {
 		return; // Skip if elements are missing
 	}
 
-	// console.log(frontElement)
-
 	// Create CSS3DObjects
 	const frontObject = new THREE.CSS3DObject(frontElement);
 	// Position object relative to the group origin (spine)
@@ -79,17 +79,6 @@ function createSheet(frontHtmlId, backHtmlId, index) {
 	// Add CSS objects to the sheet group
 	sheetGroup.add(frontObject);
 	sheetGroup.add(backObject);
-
-	// (Optional) Add transparent WebGL planes for occlusion if needed
-	// const planeMaterial = new THREE.MeshBasicMaterial({
-	//     color: 0x000000,
-	//     opacity: 0,
-	//     transparent: true,
-	//     side: THREE.DoubleSide
-	// });
-	// const planeGeometry = new THREE.PlaneGeometry(PAGE_WIDTH, PAGE_HEIGHT);
-	// const webglPlane = new THREE.Mesh(planeGeometry, planeMaterial);
-	// sheetGroup.add(webglPlane); // Add this *behind* CSS objects if used
 
 	// Store references for easy access later
 	sheetGroup.frontObject = frontObject;
@@ -110,19 +99,8 @@ pageContentIds.forEach((ids, index) => {
 	createSheet(ids.front, ids.back, index);
 });
 
-// sheets.forEach((sheet, index) => {
-//     if (sheet.backObject) {
-//         // 各シートの裏面を初期状態で非表示にする
-//         sheet.backObject.element.style.visibility = 'hidden';
-//         // console.log(`Initially hiding back of sheet ${index}`); // デバッグ用
-//     }
-// });
-
-/**
- * 現在の本の状態に基づいて、表示すべきページ（面）のみを表示する関数
- */
+/** 現在の本の状態に基づいて、表示すべきページ（面）のみを表示する関数 */
 function updatePageVisibility() {
-	// console.log(`Updating visibility based on currentSheetIndex: ${currentSheetIndex}`); // デバッグ用
 
 	sheets.forEach((sheet, i) => {
 		// このシートが左ページか右ページかを判定
@@ -141,12 +119,10 @@ function updatePageVisibility() {
 		// 表示すべき面だけを表示する
 		// 左ページ（前のシートの裏面）
 		if (isLeftPageSheet && isOpen && sheet.backObject) {
-			// console.log(`Showing back of sheet ${i} (Left Page)`); // デバッグ用
 			sheet.backObject.element.style.visibility = "visible";
 		}
 		// 右ページ（現在のシートの表面）
 		if (isRightPageSheet && isClosed && sheet.frontObject) {
-			// console.log(`Showing front of sheet ${i} (Right Page)`); // デバッグ用
 			sheet.frontObject.element.style.visibility = "visible";
 		}
 	});
@@ -154,12 +130,6 @@ function updatePageVisibility() {
 
 updatePageVisibility();
 
-// Position the book slightly for better view?
-// book.position.x = -PAGE_WIDTH / 2; // Example: Center the spine
-// book.position.y = -PAGE_HEIGHT / 2; // Example: Center vertically? Adjust camera instead.
-
-// --- Animation Logic (turnSheet) ---
-// (No changes needed in the animation logic itself)
 function turnSheet(targetSheetIndex, direction) {
 	if (isAnimating) return;
 	if (direction === "next" && targetSheetIndex >= totalSheets) return;
@@ -176,18 +146,20 @@ function turnSheet(targetSheetIndex, direction) {
 	const targetRotation = direction === "next" ? -Math.PI : 0;
 	const duration = 0.8;
 
-	// --- Generalized Visibility Control ---
-	// 対象シートに裏面が存在するか確認
-	if (sheetToTurn.backObject) {
+	if (sheetToTurn.frontObject && sheetToTurn.backObject) {
 		if (direction === "next") {
-			// 'next' (開く) アニメーション開始前に裏面を表示
-			// console.log(`Showing back of sheet ${targetSheetIndex} for 'next' turn`); // デバッグ用
+			// 'next' (開く) 時: frontが奥へ、backが手前へ来る
+			sheetToTurn.frontObject.element.style.visibility = "hidden";
 			sheetToTurn.backObject.element.style.visibility = "visible";
+			// console.log(`Start 'next': Hide front ${targetSheetIndex}, Show back ${targetSheetIndex}`); // Debug
+		} else {
+			// direction === 'prev'
+			// 'prev' (閉じる) 時: backが奥へ、frontが手前へ来る
+			sheetToTurn.frontObject.element.style.visibility = "visible";
+			sheetToTurn.backObject.element.style.visibility = "hidden";
+			// console.log(`Start 'prev': Show front ${targetSheetIndex}, Hide back ${targetSheetIndex}`); // Debug
 		}
-		// 'prev' (閉じる) 場合は onComplete で非表示にする
 	}
-
-	// No renderOrder needed for CSS3D objects typically
 
 	gsap.to(sheetToTurn.rotation, {
 		y: targetRotation,
@@ -202,14 +174,13 @@ function turnSheet(targetSheetIndex, direction) {
 				// めくったシートのIndex + 1 になる
 				currentSheetIndex = targetSheetIndex + 1;
 			} else {
-				// direction === 'prev'
 				// 閉じたシートのIndexが targetSheetIndex なので、
 				// currentSheetIndex は targetSheetIndex に戻る
 				currentSheetIndex = targetSheetIndex;
 			}
 
 			// --- Update Visibility Based on New State ---
-			updatePageVisibility()
+			updatePageVisibility();
 
 			updateButtons();
 		},
@@ -217,22 +188,17 @@ function turnSheet(targetSheetIndex, direction) {
 }
 
 // --- Interaction ---
-// (No changes needed)
 const prevBtn = document.getElementById("prev-btn");
 const nextBtn = document.getElementById("next-btn");
 
 nextBtn.addEventListener("click", () => {
-	if (!isAnimating && currentSheetIndex < totalSheets) {
+	if (!isAnimating && currentSheetIndex < totalSheets)
 		turnSheet(currentSheetIndex, "next");
-		// currentSheetIndex++;
-	}
 });
 
 prevBtn.addEventListener("click", () => {
-	if (!isAnimating && currentSheetIndex > 0) {
-		// currentSheetIndex--;
+	if (!isAnimating && currentSheetIndex > 0)
 		turnSheet(currentSheetIndex - 1, "prev");
-	}
 });
 
 function updateButtons() {
